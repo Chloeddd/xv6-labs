@@ -83,6 +83,7 @@ usertrap(void)
       p->ticks_num++;
       if(p->ticks_num > p->interval){
         p->ticks_num=0;
+        p->pre_epc=p->trapframe->epc;
         p->trapframe->epc=p->handler; //epc用于保存发生异常时的程序计数器值
 
       }

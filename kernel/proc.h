@@ -110,4 +110,6 @@ struct proc {
   int interval;
   uint64 handler;
   int ticks_num;
+  
+  uint64 pre_epc;
 };

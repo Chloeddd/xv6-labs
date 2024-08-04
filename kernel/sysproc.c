@@ -118,5 +118,8 @@ sys_sigalarm(void)
 uint64
 sys_sigreturn(void)
 {
+  struct proc *p = myproc();
+  p->ticks_num = 0;
+  p->trapframe->epc = p->pre_epc;
   return 0;
 }
