@@ -120,6 +120,6 @@ sys_sigreturn(void)
 {
   struct proc *p = myproc();
   p->ticks_num = 0;
-  p->trapframe = p->pre_p;
+  *p->trapframe = p->pre_p;
   return 0;
 }

@@ -111,5 +111,5 @@ struct proc {
   uint64 handler;
   int ticks_num;
   
-  struct trapframe pre_p;
+  struct trapframe *pre_p;
 };
