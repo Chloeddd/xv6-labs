@@ -7,6 +7,8 @@
 #include "spinlock.h"
 #include "proc.h"
 
+pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
+
 uint64
 sys_exit(void)
 {
@@ -87,7 +89,7 @@ sys_pgaccess(void)
 
   if(argaddr(0, &addr) < 0)
     return -1;
-  if(argint(1 &n) < 0)
+  if(argint(1, &n) < 0)
     return -1;
   if(argaddr(2, &bitmask) < 0)
     return -1;
@@ -98,7 +100,7 @@ sys_pgaccess(void)
   uint64 res = 0;
   struct proc *p = myproc();
 
-  for(int i=0;i<len;i++){
+  for(int i=0;i<n;i++){
     int va =addr+PGSIZE*i;
     pte_t* pte = walk(p->pagetable, va, 0);
     if(*pte & PTE_A){
