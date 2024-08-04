@@ -79,14 +79,17 @@ usertrap(void)
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2){
     // lab Alarm: handle interrupt
+    acquire(&p->lock);
     if(p->interval != 0){
       p->ticks_num++;
       if(p->ticks_num > p->interval){
+        p->ticks_num=0;
         p->pre_p = *p->trapframe; //store trapframe
         p->trapframe->epc=p->handler; //epc用于保存发生异常时的程序计数器值
 
       }
     }
+    release(&p->lock);
 
     yield();
   }
