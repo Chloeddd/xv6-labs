@@ -109,7 +109,7 @@ struct proc {
   //use in lab Alarm
   int interval;
   uint64 handler;
-  int ticks_num;
-  
+  int ticks_num;  
   struct trapframe pre_p;
+  int handler_flag;
 };

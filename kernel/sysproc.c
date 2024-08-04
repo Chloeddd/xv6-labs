@@ -109,12 +109,9 @@ sys_sigalarm(void)
     return -1;
 
   struct proc *p=myproc();
-  
-  acquire(&p->lock);
   p->ticks_num=0;
   p->interval = interval;
   p->handler = handler;
-  release(&p->lock);
 
   return 0;
 }
@@ -123,8 +120,7 @@ uint64
 sys_sigreturn(void)
 {
   struct proc *p = myproc();
-  acquire(&p->lock);
   *p->trapframe = p->pre_p;
-  release(&p->lock);
+  p->handler_flag=0;
   return 0;
 }
