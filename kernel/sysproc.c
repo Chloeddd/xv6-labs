@@ -109,8 +109,12 @@ sys_sigalarm(void)
     return -1;
 
   struct proc *p=myproc();
+  
+  acquire(&p->lock);
+  p->expired_ticks = 0;
   p->interval = interval;
   p->handler = handler;
+  release(&p->lock);
 
   return 0;
 }
