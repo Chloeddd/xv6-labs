@@ -303,22 +303,29 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   pte_t *pte;
   uint64 pa, i;
   uint flags;
-  char *mem;
+  //char *mem;
 
-  for(i = 0; i < sz; i += PGSIZE){
+  for(i = 0; i < sz; i += PGSIZE){//遍历父进程的所有内存页
     if((pte = walk(old, i, 0)) == 0)
       panic("uvmcopy: pte should exist");
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
+
+    //如果该页本身就不可写，那么子进程也不可写
+    if(*pte & PTE_W){  
+      *pte = (*pte & ~PTE_W) | PTE_COW;
+    }
     flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
+    // if((mem = kalloc()) == 0)//分配一个页
+    //   goto err;
+    // memmove(mem, (char*)pa, PGSIZE);//将父进程的物理页内容复制到新分配的页
+    // if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){//将新分配的物理页映射到子进程的页表中
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags) != 0){////所映射的物理页由新生成的mem改为父进程映射的物理页pa
+      // kfree(mem);
       goto err;
     }
+    refup((void*)pa);
   }
   return 0;
 
@@ -431,4 +438,36 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+//judge cowpage
+int iscowpage(uint64 va){
+  struct proc* p = myproc(); //获取当前正在运行的进程
+  pte_t* pte = walk(p->pagetable,va,0); //查找进程页表中与va对应的页表项pte
+  if(pte == 0)
+    return 0;
+  if((va < p->sz)&& (*pte & PTE_COW) && (*pte & PTE_V)) //va在进程的地址空间范围内、该页面是 COW 页面且有效
+    return 1;
+  else
+    return 0;
+}
+
+//copy cow page
+int uvmcopycow(uint64 va) {
+  struct proc *p = myproc();
+  pte_t *pte = walk(p->pagetable, va, 0)
+
+  // copy cow page
+  uint64 pa = PTE2PA(*pte);
+  uint64 new = kcopy((void*)pa);// 复制物理页面，并减少引用计数
+  if(new == 0)
+    return -1;
+  
+  //映射为可写，并重置PTE_COW
+  uint64 flags = (PTE_FLAGS(*pte) | PTE_W) & (~PTE_COW);
+  uvmunmap(p->pagetable, va, 1, 0); //解除当前页表项的映射
+  if(mappages(p->pagetable, va, 1, new, flags) == -1) {
+    panic("cow mappages failed");
+  }
+  return 0;
 }
