@@ -452,6 +452,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 //judge cowpage
 int iscowpage(uint64 va){
+  va = PGROUNDDOWN((uint64)va);
   if(va >= MAXVA) //
     return 0;
   struct proc* p = myproc(); //获取当前正在运行的进程

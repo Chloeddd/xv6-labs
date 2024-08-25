@@ -108,10 +108,9 @@ void *kcopy(void *pa) {
     return pa;
   }
 
-  char* new = kalloc(); //分配一个新的物理页面
+  uint64 new = (uint64)kalloc(); //分配一个新的物理页面
   if(new == 0){
     release(&ref_lock);
-    panic("out of memory");
     return 0;
   }
 
