@@ -445,7 +445,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 int iscowpage(uint64 va){
   struct proc* p = myproc(); //获取当前正在运行的进程
   pte_t* pte = walk(p->pagetable,va,0); //查找进程页表中与va对应的页表项pte
-  
+
   if(pte == 0)
     return 0;
 
@@ -462,8 +462,8 @@ int uvmcopycow(uint64 va) {
 
   // copy cow page
   uint64 pa = PTE2PA(*pte);
-  uint64* new = (uint64)kcopy((void*)pa);// 复制物理页面，并减少引用计数
-  if(new == 0)
+  void* new = (uint64)kcopy((void*)pa);// 复制物理页面，并减少引用计数
+  if((uint64)new == 0)
     return -1;
   
   //映射为可写，并重置PTE_COW
