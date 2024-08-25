@@ -469,7 +469,7 @@ int uvmcopycow(uint64 va) {
   
   //映射为可写，并重置PTE_COW
   uint64 flags = (PTE_FLAGS(*pte) | PTE_W) & (~PTE_COW);
-  uvmunmap(p->pagetable, va, 1, 0); //解除当前页表项的映射
+  uvmunmap(p->pagetable, PGROUNDDOWN(va), 1, 0); //解除当前页表项的映射
   if(mappages(p->pagetable, va, 1, (uint64)new, flags) == -1) {
     panic("cow mappages failed");
   }
