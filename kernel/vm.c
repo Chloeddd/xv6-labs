@@ -5,6 +5,7 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -444,8 +445,10 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 int iscowpage(uint64 va){
   struct proc* p = myproc(); //获取当前正在运行的进程
   pte_t* pte = walk(p->pagetable,va,0); //查找进程页表中与va对应的页表项pte
+  
   if(pte == 0)
     return 0;
+
   if((va < p->sz)&& (*pte & PTE_COW) && (*pte & PTE_V)) //va在进程的地址空间范围内、该页面是 COW 页面且有效
     return 1;
   else
@@ -455,11 +458,11 @@ int iscowpage(uint64 va){
 //copy cow page
 int uvmcopycow(uint64 va) {
   struct proc *p = myproc();
-  pte_t *pte = walk(p->pagetable, va, 0)
+  pte_t *pte = walk(p->pagetable, va, 0);
 
   // copy cow page
   uint64 pa = PTE2PA(*pte);
-  uint64 new = kcopy((void*)pa);// 复制物理页面，并减少引用计数
+  uint64* new = (uint64)kcopy((void*)pa);// 复制物理页面，并减少引用计数
   if(new == 0)
     return -1;
   
