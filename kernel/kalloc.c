@@ -94,9 +94,10 @@ kalloc(void)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
-  if(r)
+  if(r){
     memset((char*)r, 5, PGSIZE); // fill with junk
     pm_ref[getRefIdx((uint64)r)] = 1; //物理页kalloc时，是第一次引用
+  }
   return (void*)r;
 }
 
