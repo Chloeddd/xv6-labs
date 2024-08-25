@@ -462,14 +462,14 @@ int uvmcopycow(uint64 va) {
 
   // copy cow page
   uint64 pa = PTE2PA(*pte);
-  void* new = (uint64)kcopy((void*)pa);// 复制物理页面，并减少引用计数
+  void* new = kcopy((void*)pa); //复制物理页面，并减少引用计数
   if((uint64)new == 0)
     return -1;
   
   //映射为可写，并重置PTE_COW
   uint64 flags = (PTE_FLAGS(*pte) | PTE_W) & (~PTE_COW);
   uvmunmap(p->pagetable, va, 1, 0); //解除当前页表项的映射
-  if(mappages(p->pagetable, va, 1, new, flags) == -1) {
+  if(mappages(p->pagetable, va, 1, (uint64)new, flags) == -1) {
     panic("cow mappages failed");
   }
   return 0;
