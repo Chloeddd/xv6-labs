@@ -23,12 +23,12 @@
 #include "fs.h"
 #include "buf.h"
 
-#define BSIZE 13
+#define BUCKETSIZE 13
 
 struct {
   struct buf buf[NBUF];
-  struct buf bucket[BSIZE];
-  struct spinlock lock[BSIZE];
+  struct buf bucket[BUCKETSIZE];
+  struct spinlock lock[BUCKETSIZE];
 
   // Linked list of all buffers, through prev/next.
   // Sorted by how recently the buffer was used.
@@ -41,17 +41,15 @@ binit(void)
 {
   struct buf *b;
 
-  int 
-
-  for(int i=0;i<BSIZE;i++){
-    initlock(&bcache.lock[1], "bcache");
+  for(int i = 0; i<BUCKETSIZE; i++){
+    initlock(&bcache.lock[i], "bcache");
     //初始化双向链表
     bcache.bucket[i].prev = &bcache.bucket[i];
     bcache.bucket[i].next = &bcache.bucket[i];
   }
 
   for(b = bcache.buf; b < bcache.buf+NBUF; b++){
-    int bucketNo = b%BSIZE;
+    int bucketNo = b->blockno % BUCKETSIZE;
     //根据哈希桶，将buf插入双向链表
     b->next = bcache.bucket[bucketNo].next;
     b->prev = &bcache.bucket[bucketNo];
@@ -70,7 +68,7 @@ static struct buf*
 bget(uint dev, uint blockno)
 {
   struct buf *b;
-  int bucketNo = blockno%BSIZE;
+  int bucketNo = blockno%BUCKETSIZE;
 
   acquire(&bcache.lock[bucketNo]);
 
@@ -134,7 +132,7 @@ brelse(struct buf *b)
 
   releasesleep(&b->lock);
   
-  int bucketNo = b->blockno % BSIZE;
+  int bucketNo = b->blockno % BUCKETSIZE;
 
   acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
@@ -153,7 +151,7 @@ brelse(struct buf *b)
 
 void
 bpin(struct buf *b) {
-  int bucketNo = b->blockno % BSIZE;
+  int bucketNo = b->blockno % BUCKETSIZE;
   acquire(&bcache.lock[bucketNo]);
   b->refcnt++;
   release(&bcache.lock[bucketNo]);
@@ -161,7 +159,7 @@ bpin(struct buf *b) {
 
 void
 bunpin(struct buf *b) {
-  int bucketNo = b->blockno % BSIZE;
+  int bucketNo = b->blockno % BUCKETSIZE;
   acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
   release(&bcache.lock[bucketNo]);
