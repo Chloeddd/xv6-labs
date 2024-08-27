@@ -68,30 +68,30 @@ static struct buf*
 bget(uint dev, uint blockno)
 {
   struct buf *b;
-  int bucketNo = blockno%BUCKETSIZE;
-
-  acquire(&bcache.lock[bucketNo]);
-
+  int hashval=getHashVal(blockno);
+ 
+  acquire(&bcache.lock[hashval]);
+ 
   // Is the block already cached?
-  for(b = bcache.bucket[bucketNo].next; b != &bcache.bucket[bucketNo]; b = b->next){
+  for(b = bcache.bucket[hashval].next; b != &bcache.bucket[hashval]; b = b->next){
     if(b->dev == dev && b->blockno == blockno){
       b->refcnt++;
-      release(&bcache.lock[bucketNo]);
+      release(&bcache.lock[hashval]);
       acquiresleep(&b->lock);
       return b;
  
     }
   }
-
+ 
   // Not cached.
   // Recycle the least recently used (LRU) unused buffer.
-  for(b = bcache.bucket[bucketNo].prev; b != &bcache.bucket[bucketNo]; b = b->prev){
+  for(b = bcache.bucket[hashval].prev; b != &bcache.bucket[hashval]; b = b->prev){
     if(b->refcnt == 0) {
       b->dev = dev;
       b->blockno = blockno;
       b->valid = 0;
       b->refcnt = 1;
-      release(&bcache.lock[bucketNo]);
+      release(&bcache.lock[hashval]);
       acquiresleep(&b->lock);
       return b;
     }
