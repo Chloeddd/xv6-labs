@@ -67,11 +67,11 @@ kfree(void *pa)
   int id = cpuid();
   pop_off();
 
-  acquire(&kmem.lock);
+  acquire(&kmem[id].lock);
   //使用头插法回收空内存页
   r->next = kmem[id].freelist;
   kmem[id].freelist = r;
-  release(&kmem.lock);
+  release(&kmem[id].lock);
 }
 
 // Allocate one 4096-byte page of physical memory.
