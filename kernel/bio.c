@@ -68,7 +68,7 @@ static struct buf*
 bget(uint dev, uint blockno)
 {
   struct buf *b;
-  int hashval=getHashVal(blockno);
+  int hashval=blockno % BUCKETSIZE;
  
   acquire(&bcache.lock[hashval]);
  
