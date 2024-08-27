@@ -24,7 +24,6 @@
 #include "buf.h"
 
 #define BUCKETSIZE 10
-
 struct {
   struct buf buf[NBUF];
   struct buf bucket[BUCKETSIZE];
@@ -36,11 +35,18 @@ struct {
   struct buf head;
 } bcache;
 
+
+int 
+getHashVal(uint x)
+{
+  return x % BUCKETSIZE;
+}
+
 void
 binit(void)
 {
   struct buf *b;
- 
+
   for(int i = 0; i < BUCKETSIZE; i++)
     initlock(&bcache.lock[i], "bcache");
 
@@ -58,7 +64,8 @@ binit(void)
       bcache.bucket[i].next->prev = b;
       bcache.bucket[i].next = b;
     }
-  }  
+  }
+
 }
 
 // Look through buffer cache for block on device dev.
@@ -68,7 +75,7 @@ static struct buf*
 bget(uint dev, uint blockno)
 {
   struct buf *b;
-  int bucketNo = blockno%BUCKETSIZE;
+  int bucketNo=getHashVal(blockno);
 
   acquire(&bcache.lock[bucketNo]);
 
@@ -79,7 +86,7 @@ bget(uint dev, uint blockno)
       release(&bcache.lock[bucketNo]);
       acquiresleep(&b->lock);
       return b;
- 
+
     }
   }
 
@@ -97,6 +104,7 @@ bget(uint dev, uint blockno)
     }
   }
   panic("bget: no buffers");
+
 }
 
 // Return a locked buf with the contents of the indicated block.
@@ -131,8 +139,8 @@ brelse(struct buf *b)
     panic("brelse");
 
   releasesleep(&b->lock);
-  
-  int bucketNo = b->blockno % BUCKETSIZE;
+
+  int bucketNo=getHashVal(b->blockno);
 
   acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
@@ -147,11 +155,12 @@ brelse(struct buf *b)
   }
   
   release(&bcache.lock[bucketNo]);
+
 }
 
 void
 bpin(struct buf *b) {
-  int bucketNo = b->blockno % BUCKETSIZE;
+  int bucketNo = getHashVal(b->blockno);
   acquire(&bcache.lock[bucketNo]);
   b->refcnt++;
   release(&bcache.lock[bucketNo]);
@@ -159,7 +168,7 @@ bpin(struct buf *b) {
 
 void
 bunpin(struct buf *b) {
-  int bucketNo = b->blockno % BUCKETSIZE;
+  int bucketNo = getHashVal(b->blockno);
   acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
   release(&bcache.lock[bucketNo]);
