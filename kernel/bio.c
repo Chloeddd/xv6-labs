@@ -44,11 +44,13 @@ binit(void)
   for(int i = 0; i < BUCKETSIZE; i++)
     initlock(&bcache.lock[i], "bcache");
 
+  int num = NBUF/BUCKETSIZE;
+
   for(int i = 0; i < BUCKETSIZE; i++){
     //初始化双向链表
     bcache.bucket[i].prev = &bcache.bucket[i];
     bcache.bucket[i].next = &bcache.bucket[i];
-    for(b = bcache.buf+NBUF/BUCKETSIZE*i; b < bcache.buf+NBUF/BUCKETSIZE*(i+1); b++){
+    for(b = bcache.buf+num*i; b < bcache.buf+num*(i+1); b++){
       //根据哈希桶，将buf插入双向链表
       b->next = bcache.bucket[i].next;
       b->prev = &bcache.bucket[i];
@@ -162,5 +164,3 @@ bunpin(struct buf *b) {
   b->refcnt--;
   release(&bcache.lock[bucketNo]);
 }
-
-
