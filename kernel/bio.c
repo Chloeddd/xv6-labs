@@ -134,7 +134,7 @@ brelse(struct buf *b)
 
   releasesleep(&b->lock);
   
-  int bucketNo = blockno%BSIZE;
+  int bucketNo = b->blockno % BSIZE;
 
   acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
@@ -142,27 +142,29 @@ brelse(struct buf *b)
     // no one is waiting for it.
     b->next->prev = b->prev;
     b->prev->next = b->next;
-    b->next = bcache.head.next;
-    b->prev = &bcache.head;
-    bcache.head.next->prev = b;
-    bcache.head.next = b;
+    b->next = bcache.bucket[bucketNo].next;
+    b->prev = &bcache.bucket[bucketNo];
+    bcache.bucket[bucketNo].next->prev = b;
+    bcache.bucket[bucketNo].next = b;
   }
   
-  release(&bcache.lock);
+  release(&bcache.lock[bucketNo]);
 }
 
 void
 bpin(struct buf *b) {
-  acquire(&bcache.lock);
+  int bucketNo = b->blockno % BSIZE;
+  acquire(&bcache.lock[bucketNo]);
   b->refcnt++;
-  release(&bcache.lock);
+  release(&bcache.lock[bucketNo]);
 }
 
 void
 bunpin(struct buf *b) {
-  acquire(&bcache.lock);
+  int bucketNo = b->blockno % BSIZE;
+  acquire(&bcache.lock[bucketNo]);
   b->refcnt--;
-  release(&bcache.lock);
+  release(&bcache.lock[bucketNo]);
 }
 
 
