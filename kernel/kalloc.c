@@ -93,20 +93,19 @@ kalloc(void)
     release(&kmem[id].lock);
   }
   else{ //获取其他cpu的free list中的空闲页
-    for(int i=0;i<NCPU;i++){
-      if(i!=id){
-        if(kmem[i].freelist){
-          release(&kmem[id].lock); //释放当前cpu锁，防止死锁
-
-          acquire(&kmem[i].lock);
-          r = kmem[i].freelist; //获取其他cpu中空闲页
-          if(r)
-            kmem[i].freelist = r->next;
-          release(&kmem[i].lock);
-          break;
-        }
-      }
+    int free=0;
+    for(int i = 0;i<NCPU;i++){
+      free=(id+i)%NCPU;
+      if(kmem[free].freelist!=0)
+        break;
     }
+    release(&kmem[id].lock); //释放当前cpu锁
+    acquire(&kmem[free].lock);
+    r = kmem[free].freelist;
+    if(r)
+      kmem[free].freelist = r->next;
+ 
+    release(&kmem[free].lock);
   }
 
   if(r)
