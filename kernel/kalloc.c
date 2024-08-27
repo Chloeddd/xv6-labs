@@ -99,7 +99,7 @@ kalloc(void)
           release(&kmem[cpuid].lock); //释放当前cpu锁，防止死锁
 
           acquire(&kmem[i].lock);
-          r = kmem[i].freelist;
+          r = kmem[i].freelist; //获取其他cpu中空闲页
           if(r)
             kmem[i].freelist = r->next;
           release(&kmem[i].lock);
