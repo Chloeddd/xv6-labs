@@ -23,7 +23,7 @@
 #include "fs.h"
 #include "buf.h"
 
-#define BUCKETSIZE 13
+#define BUCKETSIZE 10
 
 struct {
   struct buf buf[NBUF];
@@ -40,31 +40,23 @@ void
 binit(void)
 {
   struct buf *b;
-
-  for(int i = 0; i<BUCKETSIZE; i++){
+ 
+  for(int i = 0; i < BUCKETSIZE; i++)
     initlock(&bcache.lock[i], "bcache");
+
+  for(int i = 0; i < BUCKETSIZE; i++){
     //初始化双向链表
     bcache.bucket[i].prev = &bcache.bucket[i];
     bcache.bucket[i].next = &bcache.bucket[i];
-  }
-
-  for(b = bcache.buf; b < bcache.buf+NBUF; b++){
-    int bucketNo = b->blockno % BUCKETSIZE;
-    b->dev = -1;  // 标记未使用状态
-    b->blockno = -1;
-    b->refcnt = 0;
-    b->valid = 0;
-    initsleeplock(&b->lock, "buffer");
-
-    //根据哈希桶，将buf插入双向链表
-    b->next = bcache.bucket[bucketNo].next;
-    b->prev = &bcache.bucket[bucketNo];
-    initsleeplock(&b->lock, "buffer");
-    bcache.bucket[bucketNo].next->prev = b;
-    bcache.bucket[bucketNo].next = b;
-  }
-
-  
+    for(b = bcache.buf+NBUF/BUCKETSIZE*i; b < bcache.buf+NBUF/BUCKETSIZE*(i+1); b++){
+      //根据哈希桶，将buf插入双向链表
+      b->next = bcache.bucket[i].next;
+      b->prev = &bcache.bucket[i];
+      initsleeplock(&b->lock, "buffer");
+      bcache.bucket[i].next->prev = b;
+      bcache.bucket[i].next = b;
+    }
+  }  
 }
 
 // Look through buffer cache for block on device dev.
