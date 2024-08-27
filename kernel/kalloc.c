@@ -18,10 +18,10 @@ struct run {
   struct run *next;
 };
 
-struct {
+struct kmem {
   struct spinlock lock;
   struct run *freelist;
-} kmem;
+};
 
 struct kmem kmem[NCPU]; //NCPU个kmem结构体
 
@@ -64,13 +64,13 @@ kfree(void *pa)
 
   //获取当前运行的CPU号
   push_off();
-  int cpuid = cpuid();
+  int id = cpuid();
   pop_off();
 
   acquire(&kmem.lock);
   //使用头插法回收空内存页
-  r->next = kmem[cpuid].freelist;
-  kmem[cpuid].freelist = r;
+  r->next = kmem[id].freelist;
+  kmem[id].freelist = r;
   release(&kmem.lock);
 }
 
@@ -83,20 +83,20 @@ kalloc(void)
   struct run *r;
 
   push_off();
-  int cpuid = cpuid();
+  int id = cpuid();
   pop_off();
 
-  acquire(&kmem[cpuid].lock);
-  r = kmem[cpuid].freelist;
+  acquire(&kmem[id].lock);
+  r = kmem[id].freelist;
   if(r){
-    kmem[cpuid].freelist = r->next;
-    release(&kmem[cpuid].lock);
+    kmem[id].freelist = r->next;
+    release(&kmem[id].lock);
   }
   else{ //获取其他cpu的free list中的空闲页
     for(int i=0;i<NCPU;i++){
-      if(i!=cpuid){
-        if(kmems[i].freelist){
-          release(&kmem[cpuid].lock); //释放当前cpu锁，防止死锁
+      if(i!=id){
+        if(kmem[i].freelist){
+          release(&kmem[id].lock); //释放当前cpu锁，防止死锁
 
           acquire(&kmem[i].lock);
           r = kmem[i].freelist; //获取其他cpu中空闲页
