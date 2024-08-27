@@ -50,6 +50,12 @@ binit(void)
 
   for(b = bcache.buf; b < bcache.buf+NBUF; b++){
     int bucketNo = b->blockno % BUCKETSIZE;
+    b->dev = -1;  // 标记未使用状态
+    b->blockno = -1;
+    b->refcnt = 0;
+    b->valid = 0;
+    initsleeplock(&b->lock, "buffer");
+
     //根据哈希桶，将buf插入双向链表
     b->next = bcache.bucket[bucketNo].next;
     b->prev = &bcache.bucket[bucketNo];
@@ -96,7 +102,7 @@ bget(uint dev, uint blockno)
       return b;
     }
   }
-  // panic("bget: no buffers");
+  panic("bget: no buffers");
 }
 
 // Return a locked buf with the contents of the indicated block.
